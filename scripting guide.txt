@@ -1,0 +1,181 @@
+Pynity Engine – Script Writing Guide
+1. Script Purpose
+
+Scripts in Pynity control object behavior at runtime. They can:
+
+Move objects (like WASD movement).
+
+Animate colors or images.
+
+Respond to input.
+
+Modify other object properties dynamically.
+
+Each script is a Python module that the engine imports at runtime and executes automatically for the objects it’s assigned to.
+
+2. Script Structure
+
+A Pynity script must be a Python file with at least one function:
+
+def update(obj, dt):
+    """
+    Called every frame by the engine for each object assigned this script.
+
+    Parameters:
+    - obj: dictionary representing the object
+    - dt: float, delta time in seconds since the last frame
+    """
+    pass
+
+Object Dictionary (obj) Fields
+
+When a script is called, the object dictionary contains:
+
+Key	Type	Description
+x	float	X position of object
+y	float	Y position of object
+width	int	Object width
+height	int	Object height
+color	list [r,g,b] or string	Object color (rectangles only)
+image_surface	pygame.Surface	Loaded image (if type is "image")
+scripts	list of strings	Names of scripts assigned to this object
+type	string	"rect" or "image"
+module or modules	imported module object(s)	Engine-loaded scripts
+
+The obj dictionary is live — modifying x, y, color, or image_surface immediately affects the runtime.
+
+Delta Time (dt)
+
+dt is the time elapsed since the last frame, in seconds.
+
+Use it to make movement or animations frame-independent.
+
+Example:
+
+speed = 200  # pixels per second
+obj["x"] += speed * dt
+
+3. Simple Script Examples
+3.1 WASD Movement
+import pygame
+
+def update(obj, dt):
+    keys = pygame.key.get_pressed()
+    speed = 150  # pixels per second
+    if keys[pygame.K_w]:
+        obj["y"] -= speed * dt
+    if keys[pygame.K_s]:
+        obj["y"] += speed * dt
+    if keys[pygame.K_a]:
+        obj["x"] -= speed * dt
+    if keys[pygame.K_d]:
+        obj["x"] += speed * dt
+
+3.2 Color Animation
+def update(obj, dt):
+    r, g, b = obj["color"]
+    r = (r + int(100 * dt)) % 256
+    obj["color"] = [r, g, b]
+
+3.3 Moving in a Circle
+import math
+
+def update(obj, dt):
+    if "angle" not in obj:
+        obj["angle"] = 0
+    obj["angle"] += 90 * dt  # degrees per second
+    radius = 50
+    center_x, center_y = 300, 200
+    rad = math.radians(obj["angle"])
+    obj["x"] = center_x + radius * math.cos(rad)
+    obj["y"] = center_y + radius * math.sin(rad)
+
+4. Using Images in Scripts
+
+If the object is an image, you can manipulate its image_surface:
+
+def update(obj, dt):
+    # Make image blink by toggling visibility every second
+    if "timer" not in obj:
+        obj["timer"] = 0
+    obj["timer"] += dt
+    if obj["timer"] > 1:
+        obj["timer"] = 0
+        # Swap with a blank surface to hide
+        from pygame import Surface
+        obj["image_surface"] = Surface((obj["width"], obj["height"]))
+
+
+Remember to import pygame if needed.
+
+5. Multiple Scripts Per Object
+
+Objects can have more than one script.
+
+Engine calls update(obj, dt) for each script in order.
+
+Scripts can cooperate or manipulate the same properties.
+
+Example:
+
+movement.py → controls WASD movement.
+
+color_animation.py → continuously changes color.
+
+Assign both to one object → it moves and changes color at the same time.
+
+6. Best Practices
+
+Always use dt for time-based calculations.
+
+Check if keys exist before using them if the script might be used on multiple objects.
+
+Initialize custom properties in the object if needed:
+
+if "speed" not in obj:
+    obj["speed"] = 100
+
+
+Do not assume object type if script could be assigned to both images and rectangles.
+
+Keep scripts stateless if possible — only store persistent values in the obj dictionary.
+
+7. Script Folder & Loading
+
+Save scripts in a folder, e.g., scripts/.
+
+Assign scripts in the Manager Frame of the editor.
+
+The engine dynamically imports them with importlib.
+
+Example:
+
+scripts/
+  movement.py
+  color_animation.py
+  rotate.py
+
+
+In the editor, assign movement.py and color_animation.py to the red rectangle.
+
+8. Testing Scripts
+
+Add scripts to object in editor.
+
+Export scene → generates scene_data.py.
+
+Run engine.py → see behavior in Pygame.
+
+You can modify the script file while the engine is running and restart to test changes.
+
+9. Summary
+
+Each script = Python module with update(obj, dt).
+
+Multiple scripts can be assigned per object.
+
+Use obj dictionary to manipulate position, color, images.
+
+Use dt for frame-independent behavior.
+
+Scripts are dynamically loaded and executed during the runtime.
