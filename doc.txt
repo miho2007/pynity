@@ -1,0 +1,307 @@
+Pynity Engine – Full Documentation
+1. Overview
+
+Pynity is a 2D Python game engine built using Tkinter (for the editor) and Pygame (for runtime).
+
+It allows you to:
+
+Create scenes visually using drag-and-drop assets (colored rectangles or images).
+
+Assign scripts to objects (like movement, animations).
+
+Export the scene into a Python-readable format (scene_data.py).
+
+Run the exported scene using engine.py, which acts as the playable game.
+
+The engine is modular:
+
+Editor (main.py) – GUI for creating and editing scenes.
+
+Runtime (engine.py) – Loads scene_data.py and executes the game logic.
+
+Assets – Images, colors, and scripts assigned to objects.
+
+Scripts – Python files with object behaviors.
+
+2. Engine Architecture
+2.1 Editor (main.py)
+
+The editor is a Tkinter GUI with three main areas:
+
+Scene Frame (Canvas) – The main area where objects are placed and manipulated.
+
+Manager Frame – Currently used for adding scripts and object controls.
+
+Assets Frame – A bottom bar for drag-and-drop assets (rectangles or images).
+
+Core Functionalities:
+
+Drag & Drop Assets: Users can drag rectangles or images from the Assets Frame into the Scene Canvas.
+
+Object Selection: Click on an object to select it. Selected objects can be moved or deleted.
+
+Script Assignment: Assign one or multiple scripts to objects using buttons in the Manager Frame.
+
+Export Scene: Generates scene_data.py containing all objects, positions, dimensions, colors/images, and assigned scripts.
+
+2.2 Scene Objects
+
+Each object in the scene is represented as a dictionary:
+
+{
+    "id": <Tkinter Canvas ID>,
+    "type": "rect" or "image",
+    "x": <X position>,
+    "y": <Y position>,
+    "width": <Width>,
+    "height": <Height>,
+    "color": <RGB tuple or Tkinter color string>,
+    "image": <PIL image object for images>,
+    "script": <list of script module names assigned to this object>
+}
+
+
+Rectangles are colored objects.
+
+Images can be added as assets and behave like rectangles.
+
+The objects are stored in scene_objects (editor) and exported as scene_data (runtime).
+
+2.3 Runtime (engine.py)
+
+engine.py is the runtime engine. Its job is to:
+
+Load the exported scene_data.py.
+
+Initialize Pygame.
+
+Draw all objects (rectangles or images).
+
+Apply scripts assigned to objects.
+
+Maintain the game loop at a fixed frame rate.
+
+Engine Loop (Simplified):
+
+for obj in scene_data:
+    if obj["type"] == "rect":
+        pygame.draw.rect(screen, obj["color"], pygame.Rect(obj["x"], obj["y"], obj["width"], obj["height"]))
+    elif obj["type"] == "image":
+        screen.blit(obj["image_surface"], (obj["x"], obj["y"]))
+
+# Run all scripts assigned to objects
+for obj in scene_data:
+    if "scripts" in obj:
+        for script_module in obj["modules"]:
+            script_module.update(obj, dt)
+
+
+dt = delta time between frames, passed to scripts for time-based movement/animations.
+
+Scripts control the object behavior, such as movement, animation, or color changes.
+
+The runtime supports multiple scripts per object.
+
+3. Workflow
+Step 1: Create Scene
+
+Launch main.py.
+
+Add assets to the Assets Frame (rectangles/images).
+
+Drag assets into the Scene Canvas.
+
+Position objects, resize, or delete them.
+
+Step 2: Assign Scripts
+
+Select an object in the scene.
+
+Click Assign Script in the Manager Frame.
+
+Choose one or more Python scripts.
+
+Each script must implement an update(obj, dt) function. Example:
+
+# movement.py
+import pygame
+
+def update(obj, dt):
+    keys = pygame.key.get_pressed()
+    speed = 100 * dt
+    if keys[pygame.K_w]:
+        obj["y"] -= speed
+    if keys[pygame.K_s]:
+        obj["y"] += speed
+    if keys[pygame.K_a]:
+        obj["x"] -= speed
+    if keys[pygame.K_d]:
+        obj["x"] += speed
+
+
+The engine calls update(obj, dt) for each assigned script per object.
+
+Step 3: Export Scene
+
+Click Export Scene.
+
+Generates scene_data.py with all objects and their scripts.
+
+This file can now be loaded by engine.py.
+
+Step 4: Run Game
+python engine.py
+
+
+Pygame window opens.
+
+All objects are rendered.
+
+Scripts are executed in real-time.
+
+Images and rectangles behave as designed.
+
+Optional: You can bundle engine.py, scene_data.py, and assets in a single folder to create a standalone game.
+
+4. Asset Handling
+4.1 Rectangles
+
+Added via Create Asset function.
+
+Default size: 50x50.
+
+Colored using Tkinter color strings.
+
+4.2 Images
+
+Imported via Import Image button.
+
+Uses PIL.Image to load images.
+
+Rendered in Pygame using pygame.image.fromstring().
+
+Object dictionary example for images:
+
+{
+    "id": <Canvas ID>,
+    "type": "image",
+    "x": 100,
+    "y": 200,
+    "width": 128,
+    "height": 128,
+    "image_path": "my_sprite.png",
+    "image_surface": <pygame.Surface object>,
+    "scripts": ["movement"]
+}
+
+5. Script System
+
+Supports multiple scripts per object.
+
+Scripts must implement update(obj, dt) function.
+
+Scripts can manipulate object properties:
+
+x, y → position
+
+color → rectangle color
+
+image_surface → Pygame image surface
+
+Scripts are loaded dynamically using importlib.
+
+Example of multiple scripts:
+
+obj["scripts"] = ["movement", "animation"]
+obj["modules"] = [movement_module, animation_module]
+
+
+During runtime, each module.update(obj, dt) is called in order.
+
+6. Camera & Scene Navigation
+
+Camera panning implemented via dragging empty space on scene canvas.
+
+Offset (offset_x, offset_y) is applied when rendering objects.
+
+Zoom currently not implemented for Pygame runtime.
+
+7. Exported Scene (scene_data.py)
+
+Example:
+
+scene_data = [
+    {
+        "type": "rect",
+        "color": [255, 0, 0],
+        "x": 100,
+        "y": 150,
+        "width": 50,
+        "height": 50,
+        "scripts": ["movement"]
+    },
+    {
+        "type": "image",
+        "image_path": "sprite.png",
+        "x": 200,
+        "y": 100,
+        "width": 128,
+        "height": 128,
+        "scripts": ["animation"]
+    }
+]
+
+
+Pynity runtime reads this file to recreate the scene exactly as in the editor.
+
+8. Adding New Features
+
+You can extend Pynity with:
+
+Collision Detection: Add collider attributes and implement physics in scripts.
+
+Sound: Add audio assets and play them via Pygame.
+
+UI Elements: Implement buttons or text overlays in Pygame.
+
+Multiple Scenes: Add scene switching system in engine.py.
+
+Export Game Folder: Auto-copy assets and runtime to a single folder.
+
+9. Limitations
+
+2D only.
+
+No built-in physics engine.
+
+Images are rendered at original size (scaling optional).
+
+Camera zoom/pan in Pygame not implemented.
+
+Scripts must handle input and behavior; the engine does not provide high-level APIs.
+
+10. Summary
+
+Workflow Summary:
+
+Create scene in main.py.
+
+Add assets (rectangles/images).
+
+Assign scripts to objects.
+
+Export scene → generates scene_data.py.
+
+Run engine.py → playable Python game with Pygame.
+
+Optionally, bundle engine, assets, and scene for distribution.
+
+Core Concepts:
+
+Objects = dictionaries with position, type, size, scripts.
+
+Scripts = Python modules implementing update(obj, dt).
+
+Editor = GUI for creation; engine = runtime execution.
+
+Everything is dynamic and modular.
