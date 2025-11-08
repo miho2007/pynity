@@ -3,7 +3,8 @@
 A simple **2D game editor** and **runtime engine** built in Python.  
 Import sprites, arrange them on a scene, attach multiple Python scripts, and export a playable game with one click!
 
-![Demo GIF](assets/demo.gif)
+<img width="1248" height="654" alt="image" src="https://github.com/user-attachments/assets/648e55b3-231c-4619-95f1-d7381d202037" />
+
 <!-- replace with your actual GIF or screenshot -->
 
 ---
