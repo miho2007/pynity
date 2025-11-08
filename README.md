@@ -1,4 +1,20 @@
+
+
 # 🎮 Python 2D Game Editor + Engine
+
+
+![Python](https://img.shields.io/badge/python-3.11-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Made with Tkinter](https://img.shields.io/badge/made%20with-Tkinter-orange)
+![Made with Pygame](https://img.shields.io/badge/made%20with-Pygame-red)
+
+
+
+
+
+
+
+
 
 A simple **2D game editor** and **runtime engine** built in Python.  
 Import sprites, arrange them on a scene, attach multiple Python scripts, and export a playable game with one click!
