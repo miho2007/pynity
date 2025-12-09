@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import simpledialog, filedialog
 from PIL import Image, ImageTk
 import os
+import importlib.util
+import sys
 
 root = tk.Tk()
 root.title("Pynity Engine")
@@ -40,6 +42,7 @@ scene_objects = []
 selected_object = None
 selected_offset = (0, 0)
 
+
 # --- Grid ---
 def draw_grid(spacing=25):
     scene_canvas.delete("grid_line")
@@ -50,7 +53,9 @@ def draw_grid(spacing=25):
     for y in range(0, h, spacing):
         scene_canvas.create_line(0, y, w, y, fill="gray40", tags="grid_line")
 
+
 scene_canvas.bind("<Configure>", lambda e: draw_grid())
+
 
 # --- Camera pan & object selection ---
 def on_drag_start(event):
@@ -64,6 +69,7 @@ def on_drag_start(event):
             return
     selected_object = None
     drag_start = (event.x, event.y)
+
 
 def on_drag_move(event):
     global offset_x, offset_y, drag_start
@@ -81,9 +87,11 @@ def on_drag_move(event):
         drag_start = (event.x, event.y)
         update_scene_objects()
 
+
 def on_drag_end(event):
     global drag_start, selected_object
     drag_start = None
+
 
 scene_canvas.bind("<ButtonPress-1>", on_drag_start)
 scene_canvas.bind("<B1-Motion>", on_drag_move)
@@ -92,12 +100,13 @@ scene_canvas.bind("<ButtonRelease-1>", on_drag_end)
 # --- Drag & Drop from Assets ---
 drag_data = {"widget": None, "preview": None, "x": 0, "y": 0}
 
+
 def start_drag_asset(event, asset_widget):
     drag_data["widget"] = asset_widget
     drag_data["x"] = event.x
     drag_data["y"] = event.y
     w, h = 50, 50
-    x, y = scene_canvas.winfo_width()//2, scene_canvas.winfo_height()//2
+    x, y = scene_canvas.winfo_width() // 2, scene_canvas.winfo_height() // 2
     if hasattr(asset_widget, "image_obj"):
         drag_data["preview"] = scene_canvas.create_image(x, y, image=asset_widget.image_obj, anchor="nw")
         drag_data["preview_type"] = "image"
@@ -109,6 +118,7 @@ def start_drag_asset(event, asset_widget):
 
     asset_widget.bind("<B1-Motion>", drag_asset_motion)
     asset_widget.bind("<ButtonRelease-1>", drop_asset_on_scene)
+
 
 def drag_asset_motion(event):
     widget = drag_data["widget"]
@@ -128,6 +138,7 @@ def drag_asset_motion(event):
         elif drag_data["preview_type"] == "image":
             scene_canvas.coords(drag_data["preview"], canvas_x, canvas_y)
 
+
 def drop_asset_on_scene(event):
     widget = drag_data["widget"]
     if widget and drag_data["preview"]:
@@ -143,6 +154,7 @@ def drop_asset_on_scene(event):
                 "width": x2 - x1,
                 "height": y2 - y1,
                 "scripts": [],
+                "colliders": [],  # NEW
                 "type": "rect"
             }
         else:
@@ -156,6 +168,7 @@ def drop_asset_on_scene(event):
                 "width": widget.image_width,
                 "height": widget.image_height,
                 "scripts": [],
+                "colliders": [],  # NEW
                 "type": "image",
                 "image_path": widget.image_path
             }
@@ -168,6 +181,7 @@ def drop_asset_on_scene(event):
         widget.unbind("<B1-Motion>")
         widget.unbind("<ButtonRelease-1>")
         drag_data["widget"] = None
+
 
 # --- Assets ---
 def create_asset(color=None, image_path=None):
@@ -185,10 +199,12 @@ def create_asset(color=None, image_path=None):
     asset.bind("<ButtonPress-1>", lambda e, a=asset: start_drag_asset(e, a))
     return asset
 
+
 assets = []
 assets.append(create_asset(color="red"))
 assets.append(create_asset(color="blue"))
 assets.append(create_asset(color="yellow"))
+
 
 # --- Delete object ---
 def delete_selected(event):
@@ -198,7 +214,9 @@ def delete_selected(event):
         scene_objects.remove(selected_object)
         selected_object = None
 
+
 root.bind("<Delete>", delete_selected)
+
 
 # --- Update objects ---
 def update_scene_objects():
@@ -212,6 +230,7 @@ def update_scene_objects():
         elif obj["type"] == "image":
             scene_canvas.coords(obj["id"], x1, y1)
 
+
 # --- Assign scripts ---
 def assign_script():
     global selected_object
@@ -222,10 +241,26 @@ def assign_script():
                 selected_object["scripts"] = []
             if script_name not in selected_object["scripts"]:
                 selected_object["scripts"].append(script_name)
+
+            # Dynamically attach collider if collider.py
+            if script_name == "collider":
+                try:
+                    spec = importlib.util.spec_from_file_location(script_name, script_name + ".py")
+                    mod = importlib.util.module_from_spec(spec)
+                    sys.modules[script_name] = mod
+                    spec.loader.exec_module(mod)
+                    collider_instance = mod.Collider(selected_object)
+                    selected_object["colliders"].append(collider_instance)
+                    print(f"Collider attached to object")
+                except Exception as e:
+                    print(f"Failed to attach collider: {e}")
+
             print(f"Assigned {script_name} to object")
+
 
 assign_btn = tk.Button(manager_frame, text="Assign Script", command=assign_script)
 assign_btn.pack(padx=5, pady=5, fill="x")
+
 
 # --- Import Image Button ---
 def import_image():
@@ -236,8 +271,10 @@ def import_image():
     if file_path:
         create_asset(image_path=file_path)
 
+
 import_btn = tk.Button(manager_frame, text="Import Image", command=import_image)
 import_btn.pack(padx=5, pady=5, fill="x")
+
 
 # --- Export Scene ---
 def export_scene():
@@ -264,6 +301,7 @@ def export_scene():
     with open("scene_data.py", "w") as f:
         f.write("scene_data = " + repr(scene_data_export))
     print("Scene exported as scene_data.py")
+
 
 export_btn = tk.Button(assets_frame, text="Export Scene", command=export_scene)
 export_btn.pack(side="right", padx=5, pady=5, fill="y")
